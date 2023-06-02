@@ -1,2 +1,2 @@
 [workspace]
-members = ["wc"]
+members = ["wc", "jsonparser"]
