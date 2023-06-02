@@ -155,7 +155,7 @@ fn parse(s: String) -> Result<(), char> {
                     _ => Err(c),
                 }
             }
-            c if c.is_alphabetic() && parser.last().unwrap_or(&' ') == &'"' => Ok(()),
+            c if c.is_ascii() && parser.last().unwrap_or(&' ') == &'"' => Ok(()),
 
             c => Err(c),
         }
@@ -243,9 +243,14 @@ mod test {
     }
 
     #[test]
-    // #[ignore]
     fn combination_of_data_types() {
         let s = r#"{"key1": true, "key2": false, "key3": null, "key4": "value", "key5": 101}"#;
+        assert!(parse(s.to_string()).is_ok());
+    }
+
+    #[test]
+    fn array_and_dict_as_value() {
+        let s = r#"{"key": "value", "key-n": 101, "key-o": {}, "key-l": []}"#;
         assert!(parse(s.to_string()).is_ok());
     }
 }
