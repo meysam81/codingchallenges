@@ -10,7 +10,7 @@ fn parse(s: String) -> Result<(), char> {
 
     s.bytes().try_for_each(|byte| -> Result<(), char> {
         let c = byte as char;
-        println!("{:?} {:?}", parser, c);
+        // println!("{:?} {:?}", parser, c);
 
         match c {
             '{' | '[' => {
@@ -187,6 +187,8 @@ fn main() {
 
 #[cfg(test)]
 mod test {
+    use std::vec;
+
     use super::*;
 
     #[test]
@@ -258,6 +260,9 @@ mod test {
     #[ignore]
     fn fixtures() {
         let fixtures = std::fs::read_dir("fixtures").unwrap();
+
+        let mut failed = vec![];
+
         for fixture in fixtures {
             let filepath = fixture.unwrap().path();
             let filename = filepath.file_name().unwrap().to_str().unwrap();
@@ -267,12 +272,18 @@ mod test {
                 .read_to_string(&mut contents)
                 .expect("could not read file");
 
-            println!("{}", filename);
             if filename.contains("fail") {
-                assert!(parse(contents).is_err());
+                if !parse(contents).is_err() {
+                    failed.push(filename.to_string());
+                }
             } else if filename.contains("pass") {
-                assert!(parse(contents).is_ok());
+                if parse(contents).is_err() {
+                    failed.push(filename.to_string());
+                }
             }
         }
+
+        println!("{:?}", failed);
+        assert!(failed.is_empty());
     }
 }
