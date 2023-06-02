@@ -38,7 +38,7 @@ fn parse(s: String) -> Result<(), char> {
                     _ => Err(c),
                 }
             }
-            ',' => {
+            ',' if parser.last().unwrap_or(&' ') != &'"' => {
                 parser.push(c);
                 Ok(())
             }
@@ -164,7 +164,7 @@ fn parse(s: String) -> Result<(), char> {
     if parser.is_empty() {
         Ok(())
     } else {
-        Err(parser.pop().expect("invalid json"))
+        Err(parser.pop().unwrap_or_default())
     }
 }
 
@@ -252,5 +252,27 @@ mod test {
     fn array_and_dict_as_value() {
         let s = r#"{"key": "value", "key-n": 101, "key-o": {}, "key-l": []}"#;
         assert!(parse(s.to_string()).is_ok());
+    }
+
+    #[test]
+    #[ignore]
+    fn fixtures() {
+        let fixtures = std::fs::read_dir("fixtures").unwrap();
+        for fixture in fixtures {
+            let filepath = fixture.unwrap().path();
+            let filename = filepath.file_name().unwrap().to_str().unwrap();
+            let mut contents = String::new();
+            std::fs::File::open(&filepath)
+                .expect("could not open file")
+                .read_to_string(&mut contents)
+                .expect("could not read file");
+
+            println!("{}", filename);
+            if filename.contains("fail") {
+                assert!(parse(contents).is_err());
+            } else if filename.contains("pass") {
+                assert!(parse(contents).is_ok());
+            }
+        }
     }
 }
