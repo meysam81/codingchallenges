@@ -18,3 +18,6 @@ vendor:
 
 clean:
   cargo clean
+
+test:
+  cargo test --frozen

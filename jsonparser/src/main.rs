@@ -21,12 +21,12 @@ fn parse(s: String) -> Result<(), char> {
                 let last = parser.pop().unwrap_or_default();
                 match last {
                     '{' => Ok(()),
-                    ':' => {
-                        let last = parser.pop().unwrap_or_default();
-                        match last {
-                            '{' => Ok(()),
-                            _ => Err(c),
+                    ':' | ',' => {
+                        while parser.last().unwrap_or(&' ') != &'{' {
+                            parser.pop();
                         }
+                        parser.pop();
+                        Ok(())
                     }
                     _ => Err(c),
                 }
@@ -38,6 +38,10 @@ fn parse(s: String) -> Result<(), char> {
                     _ => Err(c),
                 }
             }
+            ',' => {
+                parser.push(c);
+                Ok(())
+            }
             '\n' | '\t' | ' ' => Ok(()),
             c if c.is_numeric() && parser.last().unwrap_or(&' ') != &'"' => {
                 let last = parser.last().unwrap_or(&' ');
@@ -46,10 +50,7 @@ fn parse(s: String) -> Result<(), char> {
                     _ => Err(c),
                 }
             }
-            c if c.is_numeric() && parser.last().unwrap_or(&' ') == &'"' => {
-                parser.push(c);
-                Ok(())
-            }
+            c if c.is_numeric() && parser.last().unwrap_or(&' ') == &'"' => Ok(()),
             '"' => {
                 let last: char = parser.pop().unwrap_or_default();
                 match last {
@@ -85,17 +86,40 @@ fn parse(s: String) -> Result<(), char> {
                 parser.push(c);
                 Ok(())
             }
-            'e' if parser.last().unwrap_or(&' ') != &'"' => {
+            'e' if parser.last().unwrap_or(&' ') == &'u' => {
+                parser.pop().unwrap();
+                parser.pop().unwrap();
+                parser.pop().unwrap();
+                Ok(())
+            }
+            'f' if parser.last().unwrap_or(&' ') != &'"' => {
                 let last = parser.last().unwrap_or(&' ');
                 match last {
-                    'u' => {
-                        parser.pop().unwrap();
-                        parser.pop().unwrap();
-                        parser.pop().unwrap();
+                    ':' => {
+                        parser.push(c);
                         Ok(())
                     }
                     _ => Err(c),
                 }
+            }
+            'a' if parser.last().unwrap_or(&' ') == &'f' => {
+                parser.push(c);
+                Ok(())
+            }
+            'l' if parser.last().unwrap_or(&' ') == &'a' => {
+                parser.push(c);
+                Ok(())
+            }
+            's' if parser.last().unwrap_or(&' ') == &'l' => {
+                parser.push(c);
+                Ok(())
+            }
+            'e' if parser.last().unwrap_or(&' ') == &'s' => {
+                parser.pop().unwrap();
+                parser.pop().unwrap();
+                parser.pop().unwrap();
+                parser.pop().unwrap();
+                Ok(())
             }
             'n' if parser.last().unwrap_or(&' ') != &'"' => {
                 let last = parser.last().unwrap_or(&' ');
@@ -124,20 +148,14 @@ fn parse(s: String) -> Result<(), char> {
             ':' => {
                 let last = parser.last().unwrap_or(&' ');
                 match last {
-                    '{' => {
+                    '{' | ',' => {
                         parser.push(c);
                         Ok(())
                     }
                     _ => Err(c),
                 }
             }
-            c if c.is_alphabetic() => {
-                let last = parser.last().unwrap_or(&' ');
-                match last {
-                    '"' => Ok(()),
-                    _ => Err(c),
-                }
-            }
+            c if c.is_alphabetic() && parser.last().unwrap_or(&' ') == &'"' => Ok(()),
 
             c => Err(c),
         }
@@ -225,7 +243,7 @@ mod test {
     }
 
     #[test]
-    #[ignore]
+    // #[ignore]
     fn combination_of_data_types() {
         let s = r#"{"key1": true, "key2": false, "key3": null, "key4": "value", "key5": 101}"#;
         assert!(parse(s.to_string()).is_ok());
